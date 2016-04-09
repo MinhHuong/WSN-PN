@@ -35,8 +35,8 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
         public void DFSVerification()
         {
             // Adding probability indicators
-            // double probPathCongestion = 1f;
-            // double CPT = 0.2f; // CPT: Congestion Probability Threshold
+            double probPathCongestion = 1f;
+            double CPT = 0.2f; // CPT: Congestion Probability Threshold
 
             //The following are for identifying a counterexample trace. 
             Stack<int> depthStack = new Stack<int>(1024);
@@ -92,7 +92,6 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                 {
                     Visited.Add(ID);
 
-                    /*
                     #region Compute probability with UniInF_T (F = from, T = to)
                     Regex reg_channel = new Regex(@"Channel([0-9]+_[0-9]+)");
                     Match match = reg_channel.Match(now.configuration.Event);
@@ -112,7 +111,6 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                         }
                     }
                     #endregion
-                    */
 
                     ConfigurationBase[] steps = now.configuration.MakeOneMove().ToArray();
                     this.VerificationOutput.Transitions += steps.Length;
