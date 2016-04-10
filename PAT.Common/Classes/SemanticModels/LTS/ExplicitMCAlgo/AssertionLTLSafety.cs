@@ -70,7 +70,13 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                 if(match_congestion.Success)
                 {
                     this.VerificationOutput.NoOfStates = Visited.Count;
+
+                    // Add probability of choosing path leading to congestion, displayed on VerificationOuput
                     this.VerificationOutput.ProbPathCongestion = probPathCongestion;
+
+                    // Specify which sensor (CongestionX) provokes the congestion, displayed on VerificationOutput
+                    this.VerificationOutput.CongestedSensor = now.configuration.Event;
+
                     this.VerificationOutput.VerificationResult = VerificationResultType.INVALID;
                     return;
                 }
