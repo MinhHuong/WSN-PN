@@ -75,7 +75,7 @@ namespace PAT.Module.KWSN
             // if input prob is 80 --> automatically convert to 0.8
             set
             {
-                this._probabilityPathCongestion = (value > 1) ? value / 100f : value;
+                this._probabilityPathCongestion = (value > 1) ? value / 100d : value;
             }
         }
 

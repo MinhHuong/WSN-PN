@@ -818,7 +818,7 @@ namespace PAT.GUI.Utility
                 decBuild.AppendFormat("\nvar r{0} = {1};", channel.ID, channel.SendingRate);
 
                 // Add probability of choosing path to congestion (must * 100 because PAT specification does not accept double number)
-                decBuild.AppendFormat("\nvar prob{0} = {1};", channel.ID, channel.ProbabilityPathCongestion * 100f);
+                decBuild.AppendFormat("\nvar prob{0} = {1};", channel.ID, (int) (channel.ProbabilityPathCongestion * 100d));
             }
 
             return decBuild.ToString();

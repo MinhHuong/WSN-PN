@@ -35,8 +35,8 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
         public void DFSVerification()
         {
             // Adding probability indicators
-            double probPathCongestion = 1f;
-            double CPT = 0.2f; // CPT: Congestion Probability Threshold
+            double probPathCongestion = 1d;
+            double CPT = 0.2d; // CPT: Congestion Probability Threshold
 
             //The following are for identifying a counterexample trace. 
             Stack<int> depthStack = new Stack<int>(1024);
@@ -63,6 +63,27 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                 EventBAPairSafety now = TaskStack.Pop();
                 string ID = now.GetCompressedState();
 
+                #region Compute probability with ChannelF_T (F = from, T = to)
+                Regex reg_channel = new Regex(@"Channel([0-9]+_[0-9]+)");
+                Match match = reg_channel.Match(now.configuration.Event);
+                if (match.Success)
+                {
+                    string _regProb = "prob" + match.Groups[1].Value + "=([0-9]+)";
+                    Regex regProb = new Regex(@_regProb);
+                    EventStepSim stepSim = new EventStepSim(now.configuration);
+                    Match matchProb = regProb.Match(stepSim.StepToString);
+                    if (matchProb.Success)
+                    {
+                        probPathCongestion *= double.Parse(matchProb.Groups[1].Value) / 100d;
+                        if (probPathCongestion <= CPT)
+                        {
+                            probPathCongestion *= 1;
+                            break;
+                        }
+                    }
+                }
+                #endregion
+
                 #region Identifying a counter-example trace
                 int depth = depthStack.Pop();
 
@@ -84,6 +105,7 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                 if (now.States.Count == 0)
                 {
                     this.VerificationOutput.NoOfStates = Visited.Count;
+                    this.VerificationOutput.ProbPathCongestion = probPathCongestion;
                     this.VerificationOutput.VerificationResult = VerificationResultType.INVALID;
                     return;
                 }
@@ -91,26 +113,6 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                 if (!Visited.ContainsKey(ID))
                 {
                     Visited.Add(ID);
-
-                    #region Compute probability with UniInF_T (F = from, T = to)
-                    Regex reg_channel = new Regex(@"Channel([0-9]+_[0-9]+)");
-                    Match match = reg_channel.Match(now.configuration.Event);
-                    if (match.Success)
-                    {
-                        string _regProb = "prob" + match.Groups[1].Value + "=([0-9]+)";
-                        Regex regProb = new Regex(@_regProb);
-                        EventStepSim stepSim = new EventStepSim(now.configuration);
-                        Match matchProb = regProb.Match(stepSim.StepToString);
-                        if (matchProb.Success)
-                        {
-                            probPathCongestion *= double.Parse(matchProb.Groups[1].Value) / 100f;
-                            if (probPathCongestion <= CPT)
-                            {
-                                break;
-                            }
-                        }
-                    }
-                    #endregion
 
                     ConfigurationBase[] steps = now.configuration.MakeOneMove().ToArray();
                     this.VerificationOutput.Transitions += steps.Length;

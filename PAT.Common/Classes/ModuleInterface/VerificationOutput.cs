@@ -8,10 +8,7 @@ namespace PAT.Common.Classes.ModuleInterface
 {
     public class VerificationOutput
     {
-        /// <summary>
-        /// General Verification Output Data
-        /// </summary>
-        
+        #region General Verification Output Data
         public VerificationResultType VerificationResult;
         public List<ConfigurationBase> CounterExampleTrace;
 
@@ -29,18 +26,17 @@ namespace PAT.Common.Classes.ModuleInterface
 
         //if >= 0, got a loop
         public int LoopIndex = -1; //if >= 0, got a loop
-        
 
-        //statistics
+        // Statistics
         /// <summary>
         /// The number of states explored during the verification
         /// </summary>
         public long NoOfStates;
+
         /// <summary>
         /// The number of transitions explored during the verification
         /// </summary>
         public long Transitions;
-
 
         public int SCCCount;
         public long SCCTotalSize;
@@ -56,6 +52,9 @@ namespace PAT.Common.Classes.ModuleInterface
         public int numberOfBoolVars = 0;
         public int numberOfBDDOperation = 0;
 
+        // Probability of choosing path leading to congestion
+        public double ProbPathCongestion = 0d;
+        #endregion
 
         public VerificationOutput(string engine)
         {
@@ -170,52 +169,53 @@ namespace PAT.Common.Classes.ModuleInterface
                 case VerificationOutputType.LTS_EXPLICIT:
                 case VerificationOutputType.TTS_EXPLICIT:
                 case VerificationOutputType.MDP_EXPLICIT:
-                    sb.AppendLine("Visited States:" + (NoOfStates >= 0 ? NoOfStates.ToString() : "Unknown"));
-                    sb.AppendLine("Total Transitions:" + (Transitions >= 0 ? Transitions.ToString() : "Unknown"));
-
-                    if (ReducedMDPStates > 0)
                     {
-                        sb.AppendLine("Visited States (Reduced MDP):" + ReducedMDPStates);
-                        sb.AppendLine("Total Transitions (Reduced MDP):" + ReducedMDPTransitions);
-                    }
+                        sb.AppendLine("Visited States:" + (NoOfStates >= 0 ? NoOfStates.ToString() : "Unknown"));
+                        sb.AppendLine("Total Transitions:" + (Transitions >= 0 ? Transitions.ToString() : "Unknown"));
 
-                    if (MDPIterationNumber > 0)
-                    {
-                        sb.AppendLine("MDP Iterations:" + MDPIterationNumber);
-                    }
+                        if (ReducedMDPStates > 0)
+                        {
+                            sb.AppendLine("Visited States (Reduced MDP):" + ReducedMDPStates);
+                            sb.AppendLine("Total Transitions (Reduced MDP):" + ReducedMDPTransitions);
+                        }
 
-                    break;
+                        if (MDPIterationNumber > 0)
+                        {
+                            sb.AppendLine("MDP Iterations:" + MDPIterationNumber);
+                        }
+
+                        break;
+                    }
                 case VerificationOutputType.TTS_BDD:
                 case VerificationOutputType.MDP_BDD:
                 case VerificationOutputType.LTS_BDD:
+                    {
+                        sb.AppendLine("Number of Boolean Variables Used: " + numberOfBoolVars);
+                        sb.AppendLine("Number of BDD Operations Performed: " + numberOfBDDOperation);
 
-                    sb.AppendLine("Number of Boolean Variables Used: " + numberOfBoolVars);
-                    sb.AppendLine("Number of BDD Operations Performed: " + numberOfBDDOperation);
-
-                    break;
+                        break;
+                    }
+                    
                 case VerificationOutputType.LTS_EXPLICIT_MULTI_CORE:
-
-                    sb.AppendLine("Visited States:" + (NoOfStates >= 0 ? NoOfStates.ToString() : "Unknown"));
-                    sb.AppendLine("Total Transitions:" + (Transitions >= 0 ? Transitions.ToString() : "Unknown"));
-
-
-
-                    sb.AppendLine("Number of SCC found: " + SCCCount);
-                    sb.AppendLine("Total SCC states: " + SCCTotalSize);
-                    if (SCCCount != 0)
                     {
-                        sb.AppendLine("Average SCC Size: " + (SCCTotalSize/SCCCount));
+                        sb.AppendLine("Visited States:" + (NoOfStates >= 0 ? NoOfStates.ToString() : "Unknown"));
+                        sb.AppendLine("Total Transitions:" + (Transitions >= 0 ? Transitions.ToString() : "Unknown"));
+
+                        sb.AppendLine("Number of SCC found: " + SCCCount);
+                        sb.AppendLine("Total SCC states: " + SCCTotalSize);
+                        if (SCCCount != 0)
+                        {
+                            sb.AppendLine("Average SCC Size: " + (SCCTotalSize / SCCCount));
+                        }
+                        else
+                        {
+                            sb.AppendLine("Average SCC Size: 0");
+                        }
+
+                        sb.AppendLine("SCC Ratio: " + Math.Round(((double)SCCTotalSize / (double)NoOfStates), 2).ToString());
+
+                        break;
                     }
-                    else
-                    {
-                        sb.AppendLine("Average SCC Size: 0");
-                    }
-
-                    sb.AppendLine("SCC Ratio: " + Math.Round(((double) SCCTotalSize/(double) NoOfStates), 2).ToString());
-
-
-                    break;
-
             }
 
             sb.AppendLine("Time Used:" + VerificationTime + "s");
@@ -232,11 +232,13 @@ namespace PAT.Common.Classes.ModuleInterface
             return sb.ToString();
         }
 
+        #region Get indicators of statistics (times, mems, transitions, states, results)
         public double getTimes() { return VerificationTime; }
         public float getMems() { return EstimateMemoryUsage; }
         public long getTransitions() { return Transitions; }
         public long getStates() { return NoOfStates; }
         public string getResult() { return VerificationResult.ToString(); }
+        #endregion
     }
 
     public enum VerificationResultType : byte

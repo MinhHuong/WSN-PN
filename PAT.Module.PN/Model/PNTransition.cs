@@ -156,8 +156,11 @@ namespace PAT.Module.PN.Model
             elem.SetAttribute(XmlTag.TAG_REFERENCE_ID, _id);
 
             // Add probability of choosing path leading to congestion as an attribute
-            // elem.SetAttribute(XmlTag.ATTR_PROB_PATH_CONGESTION, _probabilityPathCongestion.ToString());
-
+            if(ProbabilityPathCongestion != 0)
+            {
+                elem.SetAttribute(XmlTag.ATTR_PROB_PATH_CONGESTION, _probabilityPathCongestion.ToString());
+            }
+                
             XmlElement eGuard = document.CreateElement("Guard");
             eGuard.InnerText = HttpUtility.HtmlEncode(_guard);
             elem.AppendChild(eGuard);
@@ -203,7 +206,10 @@ namespace PAT.Module.PN.Model
             Name = XMLelement.GetAttribute("Name");
 
             // Add probability of choosing path leading to congestion
-            // ProbabilityPathCongestion = double.Parse(XMLelement.GetAttribute(XmlTag.ATTR_PROB_PATH_CONGESTION));
+            if(XMLelement.HasAttribute(XmlTag.ATTR_PROB_PATH_CONGESTION))
+            {
+                ProbabilityPathCongestion = double.Parse(XMLelement.GetAttribute(XmlTag.ATTR_PROB_PATH_CONGESTION));
+            }
         }
         #endregion
     }
