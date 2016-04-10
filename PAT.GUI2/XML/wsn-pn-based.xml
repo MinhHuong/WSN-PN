@@ -162,11 +162,6 @@ System = Network_1();
             <Position X="2.5" Y="0.4" Width="0.25" />
           </Label>
         </Arc>
-        <Arc From="Send" To="Main" Weight="1">
-          <Label>
-            <Position X="2.8" Y="0.4" Width="0.25" />
-          </Label>
-        </Arc>
         <Arc From="Send" To="Output" Weight="1">
           <Label>
             <Position X="3.3" Y="0.7" Width="0.25" />
@@ -210,11 +205,6 @@ System = Network_1();
             <Position X="1.3" Y="0.2" Width="0.25" />
           </Label>
         </Arc>
-        <Arc From="Send" To="Main" Weight="1">
-          <Label>
-            <Position X="1.6" Y="0.2" Width="0.25" />
-          </Label>
-        </Arc>
         <Arc From="Send" To="Output" Weight="1">
           <Label>
             <Position X="2.4" Y="0.2" Width="0.25" />
@@ -225,7 +215,7 @@ System = Network_1();
 
     <Model Name="Sink" Parameter="" Zoom="1" PlaceCounter="1" TransitionCounter="2">
       <Places>
-        <Place Name="Input" NumOfToken="1" Capacity="0" id="">
+        <Place Name="Input" NumOfToken="0" Capacity="0" id="">
           <Position X="1.1" Y="0.3" Width="0.2" />
           <Label>
             <Position X="1" Y="0.55" Width="0.4" />

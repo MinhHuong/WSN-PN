@@ -63,7 +63,20 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                 EventBAPairSafety now = TaskStack.Pop();
                 string ID = now.GetCompressedState();
 
+                // Especially check for Congestion
+                // Will not work if the name of transition CongestionX has been changed before this verification is launched
+                Regex reg_congestion = new Regex(@"Congestion([0-9]+)");
+                Match match_congestion = reg_congestion.Match(now.configuration.Event);
+                if(match_congestion.Success)
+                {
+                    this.VerificationOutput.NoOfStates = Visited.Count;
+                    this.VerificationOutput.ProbPathCongestion = probPathCongestion;
+                    this.VerificationOutput.VerificationResult = VerificationResultType.INVALID;
+                    return;
+                }
+
                 #region Compute probability with ChannelF_T (F = from, T = to)
+                // Will not work if the name of ChannelX_Y has been changed before this verification is launched
                 Regex reg_channel = new Regex(@"Channel([0-9]+_[0-9]+)");
                 Match match = reg_channel.Match(now.configuration.Event);
                 if (match.Success)
@@ -77,8 +90,9 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                         probPathCongestion *= double.Parse(matchProb.Groups[1].Value) / 100d;
                         if (probPathCongestion <= CPT)
                         {
-                            probPathCongestion *= 1;
-                            break;
+                            // if probPathCongestion <= CP threshold, then choose another path and reset the indication of prob
+                            probPathCongestion = 1d;
+                            continue;
                         }
                     }
                 }
@@ -105,7 +119,6 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                 if (now.States.Count == 0)
                 {
                     this.VerificationOutput.NoOfStates = Visited.Count;
-                    this.VerificationOutput.ProbPathCongestion = probPathCongestion;
                     this.VerificationOutput.VerificationResult = VerificationResultType.INVALID;
                     return;
                 }

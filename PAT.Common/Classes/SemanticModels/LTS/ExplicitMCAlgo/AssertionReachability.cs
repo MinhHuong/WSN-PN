@@ -11,7 +11,6 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
 {
     public abstract partial class AssertionReachability : AssertionBase
     {
-        //=========================================================
         //model checking related varaibles
         public Expression ReachableStateCondition;
         public string ReachableStateLabel;
@@ -176,7 +175,6 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
 
             VerificationOutput.NoOfStates = Visited.Count;
         }
-
 
         public override string GetResultString()
         {
