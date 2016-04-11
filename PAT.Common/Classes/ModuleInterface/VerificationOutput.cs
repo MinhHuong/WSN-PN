@@ -55,7 +55,13 @@ namespace PAT.Common.Classes.ModuleInterface
         // Probability of choosing path leading to congestion
         public double ProbPathCongestion = 0d;
         public string CongestedSensor;
+        //private Dictionary<string, double> congestionProbs = new Dictionary<string,double>();
         #endregion
+
+        //public void addCongestionProbs(string congestionString, double probPathCongestion)
+        //{
+        //    congestionProbs.Add(congestionString, probPathCongestion);
+        //}
 
         public VerificationOutput(string engine)
         {
@@ -143,6 +149,10 @@ namespace PAT.Common.Classes.ModuleInterface
                 // Add indicator about probability of choosing path leading to congestion
                 sb.AppendLine("Congestion occurs on sensor: " + this.CongestedSensor);
                 sb.AppendLine("Probability of choosing this path: " + this.ProbPathCongestion.ToString());
+                //foreach(KeyValuePair<string, double> entry in congestionProbs)
+                //{
+                //    sb.AppendLine("Congestion occurs on sensor: " + entry.Key + ", wiht probability: " + entry.Value);
+                //}
             }
             else
             {

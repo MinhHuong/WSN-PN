@@ -63,7 +63,7 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                 EventBAPairSafety now = TaskStack.Pop();
                 string ID = now.GetCompressedState();
 
-                // Especially check for Congestion
+                #region Check for congestion (if congestion found, note down that path and its probability
                 // Will not work if the name of transition CongestionX has been changed before this verification is launched
                 Regex reg_congestion = new Regex(@"Congestion([0-9]+)");
                 Match match_congestion = reg_congestion.Match(now.configuration.Event);
@@ -73,13 +73,16 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
 
                     // Add probability of choosing path leading to congestion, displayed on VerificationOuput
                     this.VerificationOutput.ProbPathCongestion = probPathCongestion;
+                    // this.VerificationOutput.addCongestionProbs(now.configuration.Event, probPathCongestion);
 
                     // Specify which sensor (CongestionX) provokes the congestion, displayed on VerificationOutput
                     this.VerificationOutput.CongestedSensor = now.configuration.Event;
 
                     this.VerificationOutput.VerificationResult = VerificationResultType.INVALID;
+
                     return;
                 }
+                #endregion
 
                 #region Compute probability with ChannelF_T (F = from, T = to)
                 // Will not work if the name of ChannelX_Y has been changed before this verification is launched
