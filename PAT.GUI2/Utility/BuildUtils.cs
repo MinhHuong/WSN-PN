@@ -481,6 +481,15 @@ namespace PAT.GUI.Utility
             }
         }
 
+        /// <summary>
+        /// Generate the intermediate arcs that link between sensors
+        /// eg: Output1 --> Channel1_2
+        /// </summary>
+        /// <param name="docOut"></param>
+        /// <param name="transitions"></param>
+        /// <param name="places"></param>
+        /// <param name="arcs"></param>
+        /// <param name="localNetwork"></param>
         public static void buildConnOutSensorUN(XmlDocument docOut, XmlElement transitions, XmlElement places, XmlElement arcs, LocalNetwork localNetwork)
         {
             float x, y;
@@ -491,30 +500,38 @@ namespace PAT.GUI.Utility
                     WSNSensor fromS = (WSNSensor) channel.From;
                     if (fromS.ID != sensor.ID)
                         continue;
+                    
+                    // No need for ConnIn and UniIn on the generated PN
 
-                    String transName = "UniIn" + channel.ID;
+                    //String transName = "UniIn" + channel.ID;
+                    //WSNPNData outSData = localNetwork.getMapping(sensor.ID);
+                    //WSNPNData inSData = localNetwork.getMapping(channel.ID);
+                    //x = (outSData.getOutNodePosition().X + inSData.getInNodePosition().X) / 2f;
+                    //y = (outSData.getOutNodePosition().Y + inSData.getInNodePosition().Y) / 2f;
+                    //XmlElement trans = buildTransistion(docOut, transName, x, y);
+                    //transitions.AppendChild(trans);
+
+                    //arcs.AppendChild(buildArc(
+                    //    docOut, outSData.getOutNodeName(), transName, 
+                    //    (x + outSData.getOutNodePosition().X) / 2f, (y + outSData.getOutNodePosition().Y) / 2f));
+
+                    //String placeName = "ConnIn" + channel.ID;
+                    //x = inSData.getInNodePosition().X - 1f;      
+                    //y = inSData.getInNodePosition().Y;
+                    //XmlElement place = buildPlace(docOut, placeName, x, y);
+                    //places.AppendChild(place);
+
+                    //arcs.AppendChild(buildArc(
+                    //    docOut, transName, placeName, x - 0.5f, y));
+                    //arcs.AppendChild(buildArc(
+                    //    docOut, placeName, inSData.getInNodeName(), x - 0.15f, y));
+
                     WSNPNData outSData = localNetwork.getMapping(sensor.ID);
                     WSNPNData inSData = localNetwork.getMapping(channel.ID);
                     x = (outSData.getOutNodePosition().X + inSData.getInNodePosition().X) / 2f;
                     y = (outSData.getOutNodePosition().Y + inSData.getInNodePosition().Y) / 2f;
-                    XmlElement trans = buildTransistion(docOut, transName, x, y);
-                    transitions.AppendChild(trans);
-
-                    arcs.AppendChild(buildArc(
-                        docOut, outSData.getOutNodeName(), transName, 
-                        (x + outSData.getOutNodePosition().X) / 2f, (y + outSData.getOutNodePosition().Y) / 2f));
-
-                    String placeName = "ConnIn" + channel.ID;
-                    x = inSData.getInNodePosition().X - 1f;
-                    y = inSData.getInNodePosition().Y;
-                    XmlElement place = buildPlace(docOut, placeName, x, y);
-                    places.AppendChild(place);
-
-                    arcs.AppendChild(buildArc(
-                        docOut, transName, placeName, x - 0.5f, y));
-                    arcs.AppendChild(buildArc(
-                        docOut, placeName, inSData.getInNodeName(), x - 0.15f, y));
-                }                      
+                    arcs.AppendChild(buildArc(docOut, outSData.getOutNodeName(), inSData.getInNodeName(), x - 0.5f, y));
+                }
             }
         }
 
