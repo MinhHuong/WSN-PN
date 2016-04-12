@@ -35,8 +35,8 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
         public void DFSVerification()
         {
             // Adding probability indicators
-            double probPathCongestion = 1d;
-            double CPT = 0.2d; // CPT: Congestion Probability Threshold
+            // double probPathCongestion = 1d;
+            // double CPT = 0.2d; // CPT: Congestion Probability Threshold
 
             //The following are for identifying a counterexample trace. 
             Stack<int> depthStack = new Stack<int>(1024);
@@ -63,6 +63,7 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                 EventBAPairSafety now = TaskStack.Pop();
                 string ID = now.GetCompressedState();
 
+                /*
                 #region Check for congestion (if congestion found, note down that path and its probability
                 // Will not work if the name of transition CongestionX has been changed before this verification is launched
                 Regex reg_congestion = new Regex(@"Congestion([0-9]+)");
@@ -106,6 +107,7 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                     }
                 }
                 #endregion
+                */
 
                 #region Identifying a counter-example trace
                 int depth = depthStack.Pop();
