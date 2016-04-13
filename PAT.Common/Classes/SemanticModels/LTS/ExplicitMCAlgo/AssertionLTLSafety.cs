@@ -63,6 +63,7 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                 EventBAPairSafety now = TaskStack.Pop();
                 string ID = now.GetCompressedState();
 
+                #region Commented out
                 /*
                 #region Check for congestion (if congestion found, note down that path and its probability
                 // Will not work if the name of transition CongestionX has been changed before this verification is launched
@@ -108,6 +109,7 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                 }
                 #endregion
                 */
+                #endregion
 
                 #region Identifying a counter-example trace
                 int depth = depthStack.Pop();
