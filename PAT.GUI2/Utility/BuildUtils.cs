@@ -90,25 +90,51 @@ namespace PAT.GUI.Utility
             + "\n\nif (b{0} > 0)\n\t{2}{0} = 1;";
 
         // {0} channel id, {1} pkg/qk of from sensor id
+        //private const string PROGRAM_CHANNEL_RECEIVE_UNI =
+        //    "var sub = util.getMin({1}, r{0});"
+        //    + "\nb{0} = b{0} + sub;"
+        //    + "\n{1} = {1} - sub;"
+        //    +"\nif ({1} > 0)\n\tConnIn{0} = 1;";
+
+        // Push data from buffer to queue
+        // {0}: source sensor ID
         private const string PROGRAM_CHANNEL_RECEIVE_UNI =
-            "var sub = util.getMin({1}, r{0});"
-            + "\nb{0} = b{0} + sub;"
-            + "\n{1} = {1} - sub;"
-            +"\nif ({1} > 0)\n\tConnIn{0} = 1;";
+            "var sub"
+            + "\nsub = util.getMin(b{0}, sbr{0});"
+            + "\nb{0} = b{0} - sub;"
+            + "\nq{0} = q{0} + sub;"
+            + "\nif(b{0} > 0)"
+            + "\n\tInput{0} = 1;";
 
         // {0} - channel id, {1} pkg/qk of from sensor, {2} from sensor id, {3} to sensor id
+        // private const string PROGRAM_CHANNEL_ASTRACTION =
+            //"var sub;"
+            //+ "\nif (b{0} == 0 && {1} > 0) {{"
+            //+ "\n\tsub = util.getMin({1}, sqr{2});"
+            //+ "\n\tb{0} = b{0} + sub;"
+            //+ "\n\t{1} = {1} - sub;"
+            //+ "\n\tConnIn{0} = 1;\n}}"
+            //+ " else {{\n\tsub = util.getMin(b{0}, r{0});"
+            //+ "\n\tb{3} = b{3} + sub;"
+            //+ "\n\tb{0} = b{0} - sub;"
+            //+ "\n\tif (b{0} > 0 || {1} > 0)\n\t\tConnIn{0} = 1;"
+            //+ "\n}}";
+
+        // push data from queue to buffer
+        // {0}: can be pkg or q with a sensor ID (q1), {1}: source sensor ID, {2}: destination sensor ID, 
         private const string PROGRAM_CHANNEL_ASTRACTION =
             "var sub;"
-            + "\nif (b{0} == 0 && {1} > 0) {{"
-            + "\n\tsub = util.getMin({1}, sqr{2});"
-            + "\n\tb{0} = b{0} + sub;"
-            + "\n\t{1} = {1} - sub;"
-            + "\n\tConnIn{0} = 1;\n}}"
-            + " else {{\n\tsub = util.getMin(b{0}, r{0});"
-            + "\n\tb{3} = b{3} + sub;"
-            + "\n\tb{0} = b{0} - sub;"
-            + "\n\tif (b{0} > 0 || {1} > 0)\n\t\tConnIn{0} = 1;"
-            + "\n}}";
+            + "\nsub = util.getMin({0}, sqr{1});"
+            + "\n{0} = {0} - sub;"
+            + "\nb{2} = b{2} + sub;"
+            + "\nif({0} > 0)"
+            + "\n\tOutput{1} = 1;";
+            //var sub
+            //sub = util.getMin(pkg, sqr1);
+            //pkg = pkg - sub;
+            //b2 = b2 + sub;
+            //if(pkg > 0) 
+            //    Output1 = 1;
 
         // {0} - channel id, {1} pkg/qk of from sensor, {2} from sensor id, {3} to sensor id, {4} grp
         private const string PROGRAM_CHANNEL_ASTRACTION_MC =
@@ -679,9 +705,17 @@ namespace PAT.GUI.Utility
                             {
                                 // {0} - channel id, {1} pkg/qk of from sensor, {2} from sensor id, {3} to sensor id
                                 transition = getTransition(data, "Channel", id);
-                                setXmlNodeData(transition, "Program",
-                                        String.Format(PROGRAM_CHANNEL_ASTRACTION, id, isSource ? "pkg" : ("q" + fSensor.ID), fSensor.ID, tSensor.ID));
-                                setXmlNodeData(transition, "Guard", String.Format("b{0} <= C_MAX_BUFFER", id));
+                                //setXmlNodeData(transition, "Program",
+                                        //String.Format(PROGRAM_CHANNEL_ASTRACTION, id, isSource ? "pkg" : ("q" + fSensor.ID), fSensor.ID, tSensor.ID));
+                                setXmlNodeData(
+                                    transition, 
+                                    "Program",
+                                    String.Format(
+                                    PROGRAM_CHANNEL_ASTRACTION,
+                                    isSource ? "pkg" : ("q" + fSensor.ID),
+                                    fSensor.ID,
+                                    tSensor.ID));
+                                //setXmlNodeData(transition, "Guard", String.Format("b{0} <= C_MAX_BUFFER", id));
                                 break;
                             }
 
@@ -710,7 +744,7 @@ namespace PAT.GUI.Utility
                 // Same code inside congestion transition
                 // Embed code for transition's congestion
                 transition = getTransition(data, "Congestion", id);
-                setXmlNodeData(transition, "Guard", String.Format("b{0} > C_MAX_BUFFER", id));
+                setXmlNodeData(transition, "Guard", String.Format("b{0} > C_MAX_BUFFER || q{0} > C_MAX_QUEUE", id));
 
                 switch (channel.Type)
                 {
@@ -731,17 +765,19 @@ namespace PAT.GUI.Utility
                         {
                             // {0} channel id, {1} pkg/qk of from sensor id
                             transition = getTransition(data, "Receive", id);
+                            //setXmlNodeData(transition, "Program",
+                            //    String.Format(PROGRAM_CHANNEL_RECEIVE_UNI, id, isSource ? "pkg" : ("q" + fSensor.ID)));
                             setXmlNodeData(transition, "Program",
-                                String.Format(PROGRAM_CHANNEL_RECEIVE_UNI, id, isSource ? "pkg" : ("q" + fSensor.ID)));
+                                String.Format(PROGRAM_CHANNEL_RECEIVE_UNI, fSensor.ID));
                             setXmlNodeData(transition, "Guard",
-                                isSource ? "pkg > 0" : String.Format("q{0} > 0 && q{0} <= S_MAX_BUFFER", fSensor.ID));
+                                isSource ? "pkg > 0" : String.Format("b{0} > 0 && b{0} <= S_MAX_BUFFER && q{0} > 0 && q{0} <= C_MAX_QUEUE", fSensor.ID));
 
                             // Embed code for transition's send
                             // {0} - channel ID / {1} - to sensor ID / {2} b/q - {3} pkg/q of sensor - {4} - sensor/output - {5} from sensor id
-                            transition = getTransition(data, "Send", id);
-                            setXmlNodeData(transition, "Program",
-                                String.Format(PROGRAM_CHANNEL_SEND, id, tSensor.ID, sensorAbstract ? "q" : "b"));
-                            setXmlNodeData(transition, "Guard", String.Format("b{0} > 0 && b{0} <= C_MAX_BUFFER", id));
+                            // transition = getTransition(data, "Send", id);
+                            // setXmlNodeData(transition, "Program",
+                            //    String.Format(PROGRAM_CHANNEL_SEND, id, tSensor.ID, sensorAbstract ? "q" : "b"));
+                            // setXmlNodeData(transition, "Guard", String.Format("b{0} > 0 && b{0} <= C_MAX_BUFFER", id));
                             break;
                         }
 

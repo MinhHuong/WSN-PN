@@ -35,7 +35,7 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
         public void DFSVerification()
         {
             // Adding probability indicators
-            // double probPathCongestion = 1d;
+            double probPathCongestion = 1d;
             // double CPT = 0.2d; // CPT: Congestion Probability Threshold
 
             //The following are for identifying a counterexample trace. 
@@ -84,6 +84,7 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
 
                     return;
                 }
+                 * */
                 #endregion
 
                 #region Compute probability with ChannelF_T (F = from, T = to)
@@ -99,16 +100,14 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                     if (matchProb.Success)
                     {
                         probPathCongestion *= double.Parse(matchProb.Groups[1].Value) / 100d;
-                        if (probPathCongestion <= CPT)
+                        /*if (probPathCongestion <= CPT)
                         {
                             // if probPathCongestion <= CP threshold, then choose another path and reset the indication of prob
                             probPathCongestion = 1d;
                             continue;
-                        }
+                        }*/
                     }
                 }
-                #endregion
-                */
                 #endregion
 
                 #region Identifying a counter-example trace
@@ -116,7 +115,7 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
 
                 if (depth > 0)
                 {
-                    while (depthList[depthList.Count - 1] >= depth)
+                    while (depthList[depthList.Count - 1] >= depth) // step back from the counter-example trace
                     {
                         int lastIndex = depthList.Count - 1;
                         depthList.RemoveAt(lastIndex);
@@ -133,6 +132,13 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                 {
                     this.VerificationOutput.NoOfStates = Visited.Count;
                     this.VerificationOutput.VerificationResult = VerificationResultType.INVALID;
+
+                    // Add probability of choosing path leading to congestion, displayed on VerificationOuput
+                    this.VerificationOutput.ProbPathCongestion = probPathCongestion;
+
+                    // Specify which sensor (CongestionX) provokes the congestion, displayed on VerificationOutput
+                    this.VerificationOutput.CongestedSensor = now.configuration.Event;
+
                     return;
                 }
 
