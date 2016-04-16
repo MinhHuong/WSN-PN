@@ -36,13 +36,17 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
         {
             // Adding probability indicators
             double probPathCongestion = 1d;
+            List<string> counterExamples = new List<string>();
+            List<double> probOnPaths = new List<double>();
             // double CPT = 0.2d; // CPT: Congestion Probability Threshold
 
-            //The following are for identifying a counterexample trace. 
+            #region Identifying a counter-example trace
             Stack<int> depthStack = new Stack<int>(1024);
             depthStack.Push(0);
             List<int> depthList = new List<int>(1024);
-            //The above are for identifying a counterexample trace. 
+            #endregion
+
+            List<ConfigurationBase> counterExampleTrace = new List<ConfigurationBase>();
 
             Stack<EventBAPairSafety> TaskStack = new Stack<EventBAPairSafety>();
 
@@ -63,53 +67,6 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                 EventBAPairSafety now = TaskStack.Pop();
                 string ID = now.GetCompressedState();
 
-                #region Commented out
-                /*
-                #region Check for congestion (if congestion found, note down that path and its probability
-                // Will not work if the name of transition CongestionX has been changed before this verification is launched
-                Regex reg_congestion = new Regex(@"Congestion([0-9]+)");
-                Match match_congestion = reg_congestion.Match(now.configuration.Event);
-                if(match_congestion.Success)
-                {
-                    this.VerificationOutput.NoOfStates = Visited.Count;
-
-                    // Add probability of choosing path leading to congestion, displayed on VerificationOuput
-                    this.VerificationOutput.ProbPathCongestion = probPathCongestion;
-                    // this.VerificationOutput.addCongestionProbs(now.configuration.Event, probPathCongestion);
-
-                    // Specify which sensor (CongestionX) provokes the congestion, displayed on VerificationOutput
-                    this.VerificationOutput.CongestedSensor = now.configuration.Event;
-
-                    this.VerificationOutput.VerificationResult = VerificationResultType.INVALID;
-
-                    return;
-                }
-                 * */
-                #endregion
-
-                #region Compute probability with ChannelF_T (F = from, T = to)
-                // Will not work if the name of ChannelX_Y has been changed before this verification is launched
-                Regex reg_channel = new Regex(@"Channel([0-9]+_[0-9]+)");
-                Match match = reg_channel.Match(now.configuration.Event);
-                if (match.Success)
-                {
-                    string _regProb = "prob" + match.Groups[1].Value + "=([0-9]+)";
-                    Regex regProb = new Regex(@_regProb);
-                    EventStepSim stepSim = new EventStepSim(now.configuration);
-                    Match matchProb = regProb.Match(stepSim.StepToString);
-                    if (matchProb.Success)
-                    {
-                        probPathCongestion *= double.Parse(matchProb.Groups[1].Value) / 100d;
-                        /*if (probPathCongestion <= CPT)
-                        {
-                            // if probPathCongestion <= CP threshold, then choose another path and reset the indication of prob
-                            probPathCongestion = 1d;
-                            continue;
-                        }*/
-                    }
-                }
-                #endregion
-
                 #region Identifying a counter-example trace
                 int depth = depthStack.Pop();
 
@@ -119,11 +76,12 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                     {
                         int lastIndex = depthList.Count - 1;
                         depthList.RemoveAt(lastIndex);
-                        this.VerificationOutput.CounterExampleTrace.RemoveAt(lastIndex);
+                        counterExampleTrace.RemoveAt(lastIndex);
                     }
                 }
 
-                this.VerificationOutput.CounterExampleTrace.Add(now.configuration);
+                //this.VerificationOutput.CounterExampleTrace.Add(now.configuration);
+                counterExampleTrace.Add(now.configuration);
                 depthList.Add(depth);
                 #endregion
 
@@ -134,17 +92,50 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                     this.VerificationOutput.VerificationResult = VerificationResultType.INVALID;
 
                     // Add probability of choosing path leading to congestion, displayed on VerificationOuput
-                    this.VerificationOutput.ProbPathCongestion = probPathCongestion;
+                    probOnPaths.Add(probPathCongestion);
+                    StringBuilder sb = new StringBuilder();
+                    foreach(ConfigurationBase cb in counterExampleTrace)
+                    {
+                        sb.Append(cb.Event);
+                        sb.Append(" -> ");
+                    }
+                    counterExamples.Add(sb.ToString());
+
+                    //this.VerificationOutput.ProbPathCongestion = probPathCongestion;
 
                     // Specify which sensor (CongestionX) provokes the congestion, displayed on VerificationOutput
-                    this.VerificationOutput.CongestedSensor = now.configuration.Event;
+                    //this.VerificationOutput.CongestedSensor = now.configuration.Event;
 
-                    return;
+                    continue;
+                    //return;
                 }
 
                 if (!Visited.ContainsKey(ID))
                 {
                     Visited.Add(ID);
+
+                    #region Compute probability with ChannelF_T (F = from, T = to)
+                    // Will not work if the name of ChannelX_Y has been changed before this verification is launched
+                    Regex reg_channel = new Regex(@"Channel([0-9]+_[0-9]+)");
+                    Match match = reg_channel.Match(now.configuration.Event);
+                    if (match.Success)
+                    {
+                        string _regProb = "prob" + match.Groups[1].Value + "=([0-9]+)";
+                        Regex regProb = new Regex(@_regProb);
+                        EventStepSim stepSim = new EventStepSim(now.configuration);
+                        Match matchProb = regProb.Match(stepSim.StepToString);
+                        if (matchProb.Success)
+                        {
+                            probPathCongestion *= double.Parse(matchProb.Groups[1].Value) / 100;
+                            /*if (probPathCongestion <= CPT)
+                            {
+                                // if probPathCongestion <= CP threshold, then choose another path and reset the indication of prob
+                                probPathCongestion = 1d;
+                                continue;
+                            }*/
+                        }
+                    }
+                    #endregion
 
                     ConfigurationBase[] steps = now.configuration.MakeOneMove().ToArray();
                     this.VerificationOutput.Transitions += steps.Length;
@@ -157,9 +148,12 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                 }
             }
 
-            this.VerificationOutput.CounterExampleTrace = null;
-            this.VerificationOutput.NoOfStates = Visited.Count;
-            this.VerificationOutput.VerificationResult = VerificationResultType.VALID;
+            if(this.VerificationOutput.VerificationResult != VerificationResultType.INVALID)
+            {
+                this.VerificationOutput.CounterExampleTrace = null;
+                this.VerificationOutput.NoOfStates = Visited.Count;
+                this.VerificationOutput.VerificationResult = VerificationResultType.VALID;
+            }
         }
 
         /// <summary>

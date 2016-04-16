@@ -745,6 +745,7 @@ namespace PAT.GUI.Utility
                 // Embed code for transition's congestion
                 transition = getTransition(data, "Congestion", id);
                 setXmlNodeData(transition, "Guard", String.Format("b{0} > C_MAX_BUFFER || q{0} > C_MAX_QUEUE", id));
+                setXmlNodeData(transition, "Program", String.Format("Input{0}", tSensor.ID));
 
                 switch (channel.Type)
                 {
