@@ -49,9 +49,11 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
             List<ConfigurationBase> counterExampleTrace = new List<ConfigurationBase>();
 
             Stack<EventBAPairSafety> TaskStack = new Stack<EventBAPairSafety>();
+            Stack<double> probTaskStack = new Stack<double>();
 
             EventBAPairSafety initialstep = EventBAPairSafety.GetInitialPairs(BA, InitialStep);
             TaskStack.Push(initialstep);
+            probTaskStack.Push(probPathCongestion);
             
             //Dictionary<string, bool> Visited = new Dictionary<string, bool>();
             StringHashTable Visited = new StringHashTable(Ultility.Ultility.MC_INITIAL_SIZE);
@@ -65,6 +67,7 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                 }
 
                 EventBAPairSafety now = TaskStack.Pop();
+                double probNow = probTaskStack.Pop();
                 string ID = now.GetCompressedState();
 
                 #region Identifying a counter-example trace
@@ -92,7 +95,7 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                     this.VerificationOutput.VerificationResult = VerificationResultType.INVALID;
 
                     // Add probability of choosing path leading to congestion, displayed on VerificationOuput
-                    probOnPaths.Add(probPathCongestion);
+                    probOnPaths.Add(probNow);
                     StringBuilder sb = new StringBuilder();
                     foreach(ConfigurationBase cb in counterExampleTrace)
                     {
@@ -114,35 +117,13 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                 {
                     Visited.Add(ID);
 
-                    #region Compute probability with ChannelF_T (F = from, T = to)
-                    // Will not work if the name of ChannelX_Y has been changed before this verification is launched
-                    Regex reg_channel = new Regex(@"Channel([0-9]+_[0-9]+)");
-                    Match match = reg_channel.Match(now.configuration.Event);
-                    if (match.Success)
-                    {
-                        string _regProb = "prob" + match.Groups[1].Value + "=([0-9]+)";
-                        Regex regProb = new Regex(@_regProb);
-                        EventStepSim stepSim = new EventStepSim(now.configuration);
-                        Match matchProb = regProb.Match(stepSim.StepToString);
-                        if (matchProb.Success)
-                        {
-                            probPathCongestion *= double.Parse(matchProb.Groups[1].Value) / 100;
-                            /*if (probPathCongestion <= CPT)
-                            {
-                                // if probPathCongestion <= CP threshold, then choose another path and reset the indication of prob
-                                probPathCongestion = 1d;
-                                continue;
-                            }*/
-                        }
-                    }
-                    #endregion
-
                     ConfigurationBase[] steps = now.configuration.MakeOneMove().ToArray();
                     this.VerificationOutput.Transitions += steps.Length;
                     EventBAPairSafety[] products = now.Next(BA,steps);
                     foreach (EventBAPairSafety step in products)
                     {
                         TaskStack.Push(step);
+                        probTaskStack.Push(probNow * GetProbabilityFromChannel(step));
                         depthStack.Push(depth + 1);
                     }
                 }
@@ -154,6 +135,28 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                 this.VerificationOutput.NoOfStates = Visited.Count;
                 this.VerificationOutput.VerificationResult = VerificationResultType.VALID;
             }
+        }
+
+        private double GetProbabilityFromChannel(EventBAPairSafety now)
+        {
+            double result = 1d;
+
+            // Will not work if the name of ChannelX_Y has been changed before this verification is launched
+            Regex reg_channel = new Regex(@"Channel([0-9]+_[0-9]+)");
+            Match match = reg_channel.Match(now.configuration.Event);
+            if (match.Success)
+            {
+                string _regProb = "prob" + match.Groups[1].Value + "=([0-9]+)";
+                Regex regProb = new Regex(@_regProb);
+                EventStepSim stepSim = new EventStepSim(now.configuration);
+                Match matchProb = regProb.Match(stepSim.StepToString);
+                if (matchProb.Success)
+                {
+                    result = double.Parse(matchProb.Groups[1].Value) / 100;
+                }
+            }
+
+            return result;
         }
 
         /// <summary>
