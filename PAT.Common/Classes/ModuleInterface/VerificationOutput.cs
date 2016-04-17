@@ -53,8 +53,10 @@ namespace PAT.Common.Classes.ModuleInterface
         public int numberOfBDDOperation = 0;
 
         // Probability of choosing path leading to congestion
-        public double ProbPathCongestion = 0d;
-        public string CongestedSensor;
+        //public double ProbPathCongestion = 0d;
+        //public string CongestedSensor;
+        public List<string> CounterExampleTraces = new List<string>();
+        public List<double> ProbOnPaths = new List<double>();
         //private Dictionary<string, double> congestionProbs = new Dictionary<string,double>();
         #endregion
 
@@ -106,7 +108,7 @@ namespace PAT.Common.Classes.ModuleInterface
         {
             if (GenerateCounterExample)
             {
-                sb.Append("<");
+                /*sb.Append("<");
 
                 bool hasVisibleEvent = false;
                 for (int i = 0; i < CounterExampleTrace.Count; i++)
@@ -144,15 +146,12 @@ namespace PAT.Common.Classes.ModuleInterface
                     sb.Append(")*");
                 }
 
-                sb.AppendLine(">");
+                sb.AppendLine(">");*/
 
-                // Add indicator about probability of choosing path leading to congestion
-                sb.AppendLine("Congestion occurs on sensor: " + this.CongestedSensor);
-                sb.AppendLine("Probability of choosing this path: " + this.ProbPathCongestion.ToString());
-                //foreach(KeyValuePair<string, double> entry in congestionProbs)
-                //{
-                //    sb.AppendLine("Congestion occurs on sensor: " + entry.Key + ", wiht probability: " + entry.Value);
-                //}
+                int lastPath = CounterExampleTraces.Count - 1;
+                sb.AppendLine(CounterExampleTraces[lastPath]);
+                sb.AppendLine("Probability of choosing this path: " + ProbOnPaths[lastPath].ToString());
+                sb.AppendLine("There are approximately " + CounterExampleTraces.Count + " counter examples for this property. Above is the last one.");
             }
             else
             {

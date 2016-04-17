@@ -38,7 +38,7 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
             double probPathCongestion = 1d;
             List<string> counterExamples = new List<string>();
             List<double> probOnPaths = new List<double>();
-            // double CPT = 0.2d; // CPT: Congestion Probability Threshold
+            double CPT = 0.05d; // CPT: Congestion Probability Threshold
 
             #region Identifying a counter-example trace
             Stack<int> depthStack = new Stack<int>(1024);
@@ -58,7 +58,7 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
             //Dictionary<string, bool> Visited = new Dictionary<string, bool>();
             StringHashTable Visited = new StringHashTable(Ultility.Ultility.MC_INITIAL_SIZE);
 
-            while (TaskStack.Count != 0)
+            while (TaskStack.Count != 0 && probOnPaths.Count < 500)
             {
                 if (CancelRequested)
                 {
@@ -115,6 +115,8 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
 
                 if (!Visited.ContainsKey(ID))
                 {
+                    double probOnTheFly;
+
                     Visited.Add(ID);
 
                     ConfigurationBase[] steps = now.configuration.MakeOneMove().ToArray();
@@ -122,9 +124,13 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                     EventBAPairSafety[] products = now.Next(BA,steps);
                     foreach (EventBAPairSafety step in products)
                     {
-                        TaskStack.Push(step);
-                        probTaskStack.Push(probNow * GetProbabilityFromChannel(step));
-                        depthStack.Push(depth + 1);
+                        probOnTheFly = probNow * GetProbabilityFromChannel(step);
+                        if(probOnTheFly > CPT)
+                        {
+                            TaskStack.Push(step);
+                            probTaskStack.Push(probOnTheFly);
+                            depthStack.Push(depth + 1);
+                        }
                     }
                 }
             }
@@ -134,6 +140,12 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                 this.VerificationOutput.CounterExampleTrace = null;
                 this.VerificationOutput.NoOfStates = Visited.Count;
                 this.VerificationOutput.VerificationResult = VerificationResultType.VALID;
+            }
+            else
+            {
+                this.VerificationOutput.CounterExampleTraces = counterExamples;
+                this.VerificationOutput.ProbOnPaths = probOnPaths;
+                return;
             }
         }
 
