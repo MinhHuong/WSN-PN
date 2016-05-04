@@ -34,32 +34,34 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
         /// </summary>
         public void DFSVerification()
         {
-            // Adding probability indicators
-            double probPathCongestion = 1d;
-            List<string> counterExamples = new List<string>();
-            List<double> probOnPaths = new List<double>();
-            double CPT = 0.05d; // CPT: Congestion Probability Threshold
+            #region Variables to compute Probability
+            List<string> counterExamples = new List<string>(); // list of all possible counter examples
+            List<double> probOnPaths = new List<double>(); // list of congestion probability corresponding to each path
+            double CPT = 0.1d; // CPT: Congestion Probability Threshold
+            Dictionary<string, double> sensorsCongestionProbability = new Dictionary<string, double>(); // final congestion probability on each sensor
+            #endregion
 
             #region Identifying a counter-example trace
-            Stack<int> depthStack = new Stack<int>(1024);
+            Stack<int> depthStack = new Stack<int>(1024); // Depth of the stack (on the fly, changed on each execution on the RG)
             depthStack.Push(0);
-            List<int> depthList = new List<int>(1024);
+            List<int> depthList = new List<int>(1024); // Depth of the list (stable, indicate the real depth of the RG)
             #endregion
 
             List<ConfigurationBase> counterExampleTrace = new List<ConfigurationBase>();
 
-            Stack<EventBAPairSafety> TaskStack = new Stack<EventBAPairSafety>();
-            Stack<double> probTaskStack = new Stack<double>();
+            Stack<EventBAPairSafety> TaskStack = new Stack<EventBAPairSafety>(); // stack of events (Channel1_2, Send1, Congestion3, etc.)
+            Stack<double> probTaskStack = new Stack<double>(); // probability on the fly (constanly be pushed and popped)
 
+            #region Initialization
             EventBAPairSafety initialstep = EventBAPairSafety.GetInitialPairs(BA, InitialStep);
             TaskStack.Push(initialstep);
-            probTaskStack.Push(probPathCongestion);
-            
-            //Dictionary<string, bool> Visited = new Dictionary<string, bool>();
+            probTaskStack.Push(1d);
             StringHashTable Visited = new StringHashTable(Ultility.Ultility.MC_INITIAL_SIZE);
+            #endregion
 
-            while (TaskStack.Count != 0 && probOnPaths.Count < 500)
+            while (TaskStack.Count != 0)
             {
+                // If the verification of RG is cancelled for some reason
                 if (CancelRequested)
                 {
                     this.VerificationOutput.NoOfStates = Visited.Count;
@@ -88,11 +90,22 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                 depthList.Add(depth);
                 #endregion
 
-                // No state to visit
+                #region Congestion is detected
                 if (now.States.Count == 0)
                 {
                     this.VerificationOutput.NoOfStates = Visited.Count;
                     this.VerificationOutput.VerificationResult = VerificationResultType.INVALID;
+
+                    // Update the congesition probability on each Sensor
+                    string IDSensor = GetIDOfCongestion(now);
+                    if (sensorsCongestionProbability.ContainsKey(IDSensor))
+                    {
+                        sensorsCongestionProbability[IDSensor] += probNow;
+                    }
+                    else
+                    {
+                        sensorsCongestionProbability.Add(IDSensor, probNow);
+                    }
 
                     // Add probability of choosing path leading to congestion, displayed on VerificationOuput
                     probOnPaths.Add(probNow);
@@ -104,15 +117,11 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                     }
                     counterExamples.Add(sb.ToString());
 
-                    //this.VerificationOutput.ProbPathCongestion = probPathCongestion;
-
-                    // Specify which sensor (CongestionX) provokes the congestion, displayed on VerificationOutput
-                    //this.VerificationOutput.CongestedSensor = now.configuration.Event;
-
-                    continue;
-                    //return;
+                    continue; // if found CongestionX, continue expanding the RG
                 }
+                #endregion
 
+                #region Main execution on RG
                 if (!Visited.ContainsKey(ID))
                 {
                     double probOnTheFly;
@@ -133,9 +142,11 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                         }
                     }
                 }
+                #endregion
             }
 
-            if(this.VerificationOutput.VerificationResult != VerificationResultType.INVALID)
+            #region Treat the final Output (if the verification is VALID or INVALID)
+            if (this.VerificationOutput.VerificationResult != VerificationResultType.INVALID)
             {
                 this.VerificationOutput.CounterExampleTrace = null;
                 this.VerificationOutput.NoOfStates = Visited.Count;
@@ -147,8 +158,15 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                 this.VerificationOutput.ProbOnPaths = probOnPaths;
                 return;
             }
+            #endregion
         }
 
+
+        /// <summary>
+        /// Get the Congestion Probability from a node on RG (ChannalX_Y, X: id of From Channel, Y: id of To Channel)
+        /// </summary>
+        /// <param name="now"></param>
+        /// <returns></returns>
         private double GetProbabilityFromChannel(EventBAPairSafety now)
         {
             double result = 1d;
@@ -169,6 +187,18 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
             }
 
             return result;
+        }
+
+
+        private string GetIDOfCongestion(EventBAPairSafety now)
+        {
+            Regex reg_congestion = new Regex(@"Congestion([0-9]+)");
+            Match match = reg_congestion.Match(now.configuration.Event);
+            if (match.Success)
+            {
+                return match.Groups[1].Value;
+            }
+            return "-1";
         }
 
         /// <summary>
@@ -230,6 +260,7 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
             VerificationOutput.NoOfStates = Visited.Count;
             VerificationOutput.VerificationResult = VerificationResultType.VALID;
         }
+
 
         public virtual string GetResultStringSafety()
         {
