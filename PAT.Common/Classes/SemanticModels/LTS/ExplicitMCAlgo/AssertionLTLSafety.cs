@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System;
 using PAT.Common.Classes.BA;
 using PAT.Common.Classes.DataStructure;
 using PAT.Common.Classes.LTS;
@@ -37,7 +38,6 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
             #region Variables to compute Probability
             List<string> counterExamples = new List<string>(); // list of all possible counter examples
             List<double> probOnPaths = new List<double>(); // list of congestion probability corresponding to each path
-            double CPT = 0.1d; // CPT: Congestion Probability Threshold
             Dictionary<string, double> sensorsCongestionProbability = new Dictionary<string, double>(); // final congestion probability on each sensor
             #endregion
 
@@ -59,7 +59,7 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
             StringHashTable Visited = new StringHashTable(Ultility.Ultility.MC_INITIAL_SIZE);
             #endregion
 
-            while (TaskStack.Count != 0)
+            while (TaskStack.Count != 0 && Visited.Count <= 500000)
             {
                 // If the verification of RG is cancelled for some reason
                 if (CancelRequested)
@@ -122,8 +122,8 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                 #endregion
 
                 #region Main execution on RG
-                if (!Visited.ContainsKey(ID))
-                {
+                //if (!Visited.ContainsKey(ID))
+                //{
                     double probOnTheFly;
 
                     Visited.Add(ID);
@@ -131,17 +131,30 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
                     ConfigurationBase[] steps = now.configuration.MakeOneMove().ToArray();
                     this.VerificationOutput.Transitions += steps.Length;
                     EventBAPairSafety[] products = now.Next(BA,steps);
+
+                    #region Retrieve probability on non-congestion path
+                    if (products.Length == 0) // there is no more state to discover --> return back --> write down the path
+                    {
+                        probOnPaths.Add(probNow);
+                        StringBuilder sb = new StringBuilder();
+                        foreach (ConfigurationBase cb in counterExampleTrace)
+                        {
+                            sb.Append(cb.Event);
+                            sb.Append(" -> ");
+                        }
+                        counterExamples.Add(sb.ToString());
+                    }
+                    #endregion
+
                     foreach (EventBAPairSafety step in products)
                     {
                         probOnTheFly = probNow * GetProbabilityFromChannel(step);
-                        if(probOnTheFly > CPT)
-                        {
-                            TaskStack.Push(step);
-                            probTaskStack.Push(probOnTheFly);
-                            depthStack.Push(depth + 1);
-                        }
+                        TaskStack.Push(step);
+                        // calculate probability on the current state
+                        probTaskStack.Push(probOnTheFly);
+                        depthStack.Push(depth + 1);
                     }
-                }
+                //}
                 #endregion
             }
 
@@ -169,6 +182,10 @@ namespace PAT.Common.Classes.SemanticModels.LTS.Assertion
         /// <returns></returns>
         private double GetProbabilityFromChannel(EventBAPairSafety now)
         {
+            //double upper_bound = 0.999999d;
+            //double lower_bound = 0.8d;
+            //Random random = new Random();
+            //double result = random.NextDouble() * (upper_bound - lower_bound) + lower_bound;
             double result = 1d;
 
             // Will not work if the name of ChannelX_Y has been changed before this verification is launched
